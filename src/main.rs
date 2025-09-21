@@ -4,34 +4,71 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 
+use anyhow::Result;
 use ratatui::{
     Frame, Terminal,
-    backend::{Backend, CrosstermBackend},
+    backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    style::Style,
-    widgets::{Block, Borders, Paragraph},
+    style::{Modifier, Style},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
+use std::{io, vec};
+use sysinfo::System;
 
-use anyhow::Result;
-use std::io;
-use sysinfo::{Cpu, System};
+//-------------------------------------------------------------------------------------------------------
+
+struct ProcessItem {
+    pid: String,
+    name: String,
+    cpu_usage: String,
+}
 
 struct App {
     sys: System,
+    processes: Vec<ProcessItem>,
 }
 
 impl App {
     fn new() -> Self {
         App {
             sys: System::new_all(),
+            processes: Vec::new(),
         }
     }
 
     fn refresh(&mut self) {
-        self.sys.refresh_cpu_all();
-        self.sys.refresh_memory();
+        self.sys.refresh_all();
+
+        self.processes.clear();
+
+        for (pid, process) in self.sys.processes() {
+            self.processes.push(ProcessItem {
+                pid: pid.to_string(),
+                name: process.name().to_string_lossy().into_owned(),
+                cpu_usage: format!("{:.2}%", process.cpu_usage()),
+            });
+        }
+
+        self.processes.sort_by(|a, b| {
+            let a_cpu = a
+                .cpu_usage
+                .trim_end_matches('%')
+                .parse::<f32>()
+                .unwrap_or(0.0);
+            let b_cpu = b
+                .cpu_usage
+                .trim_end_matches('%')
+                .parse::<f32>()
+                .unwrap_or(0.0);
+
+            b_cpu
+                .partial_cmp(&a_cpu)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
     }
 }
+
+//----------------------------------------------------------------------------------------------------------
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
@@ -42,6 +79,10 @@ fn main() -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new();
+
+    app.refresh();
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
     run_app(&mut terminal, &mut app)?;
 
     disable_raw_mode()?;
@@ -50,10 +91,13 @@ fn main() -> Result<()> {
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
+    terminal.show_cursor()?;
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> {
+//----------------------------------------------------------------------------------------------------------
+
+fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> {
     loop {
         //refresh data on every loop
         app.refresh();
@@ -75,7 +119,7 @@ fn ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(7), Constraint::Min(0)])
-        .split(f.size());
+        .split(f.area());
 
     //sys info
     let sys_info_block = Block::default().borders(Borders::ALL).title("System Info");
@@ -97,6 +141,38 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     f.render_widget(sys_info_para, chunks[0]);
 
+    //Process table
     let process_block = Block::default().borders(Borders::ALL).title("Processes");
-    f.render_widget(process_block, chunks[1]);
+
+    let header_cells = ["PID", "Name", "CPU %"].iter().map(|h| {
+        Cell::from(*h).style(
+            Style::default()
+                .fg(ratatui::style::Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
+    });
+
+    let header = Row::new(header_cells).height(1);
+
+    let rows = app.processes.iter().map(|item| {
+        let cells = vec![
+            Cell::from(item.pid.clone()),
+            Cell::from(item.name.clone()),
+            Cell::from(item.cpu_usage.clone()),
+        ];
+        Row::new(cells).height(1)
+    });
+
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Length(10),
+            Constraint::Min(20),
+            Constraint::Length(10),
+        ],
+    )
+    .header(header)
+    .block(process_block);
+
+    f.render_widget(table, chunks[1]);
 }
