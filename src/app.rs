@@ -1,6 +1,8 @@
 use ratatui::style::Color;
 use ratatui::widgets::TableState;
-use sysinfo::System;
+use sysinfo::{Pid, Process, System};
+
+//-----------------------------------------------------------------------------------------------------------------
 
 pub struct ColorTheme {
     pub base: Color,
@@ -148,6 +150,7 @@ pub struct ProcessItem {
     pub pid: String,
     pub name: String,
     pub cpu_usage: String,
+    pub memory: String,
 }
 
 pub struct App {
@@ -171,6 +174,18 @@ impl App {
             theme: AppTheme::Nord,
             mode: AppMode::Normal,
             command_buffer: String::new(),
+        }
+    }
+
+    pub fn kill_selected_process(&mut self) {
+        if let Some(selected) = self.table_state.selected() {
+            if let Some(item) = self.processes.get(selected) {
+                if let Ok(pid) = item.pid.parse::<usize>() {
+                    if let Some(process) = self.sys.process(Pid::from(pid)) {
+                        process.kill();
+                    }
+                }
+            }
         }
     }
 
@@ -213,6 +228,7 @@ impl App {
                 pid: pid.to_string(),
                 name: process.name().to_string_lossy().into_owned(),
                 cpu_usage: format!("{:.2}%", process.cpu_usage()),
+                memory: format!("{:.2} MB", process.memory() as f64 / (1024.0 * 1024.0)),
             });
         }
 
@@ -234,3 +250,5 @@ impl App {
         });
     }
 }
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------

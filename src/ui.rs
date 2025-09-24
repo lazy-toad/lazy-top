@@ -5,10 +5,12 @@ use ratatui::{
 
 use crate::app::{App, AppMode, AppTheme};
 
+//-------------------------------------------------------------------------------------------
+
 pub fn ui(f: &mut Frame, app: &mut App) {
     let theme = app.theme.get_colors();
-
     f.render_widget(Clear, f.area());
+
     let base_block = Block::default().style(Style::default().bg(theme.base));
     f.render_widget(base_block, f.area());
 
@@ -50,35 +52,43 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         .borders(Borders::ALL)
         .title("Processes")
         .border_style(Style::default().fg(theme.pink));
-    let header_cells = ["PID", "Name", "CPU %"].iter().map(|h| {
+
+    let header_cells = ["PID", "Name", "CPU %", "Memory"].iter().map(|h| {
         Cell::from(*h).style(
             Style::default()
                 .fg(theme.yellow)
                 .add_modifier(Modifier::BOLD),
         )
     });
+
     let header = Row::new(header_cells)
         .height(1)
         .style(Style::default().bg(theme.mantle));
+
     let rows = app.processes.iter().map(|item| {
         let cells = vec![
             Cell::from(item.pid.clone()),
             Cell::from(item.name.clone()),
             Cell::from(item.cpu_usage.clone()),
+            Cell::from(item.memory.clone()),
         ];
+
         let row_style = Style::default().fg(theme.text).bg(theme.base);
         Row::new(cells).height(1).style(row_style)
     });
+
     let highlight_style = Style::default()
         .bg(theme.highlight_bg)
         .fg(theme.highlight_fg)
         .add_modifier(Modifier::BOLD);
+
     let table = Table::new(
         rows,
         [
             Constraint::Length(10),
             Constraint::Min(20),
             Constraint::Length(10),
+            Constraint::Length(12),
         ],
     )
     .header(header)
@@ -98,3 +108,5 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         f.render_widget(command_paragraph, chunks[2]);
     }
 }
+
+//----------------------------------------------------------------------------------------------------------------------

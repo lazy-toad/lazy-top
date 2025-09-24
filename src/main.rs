@@ -34,6 +34,7 @@ fn handle_key_event(app: &mut App, key_code: KeyCode) {
                 app.mode = AppMode::Command;
                 app.command_buffer.clear();
             }
+            KeyCode::Char('k') => app.kill_selected_process(),
             KeyCode::Down => app.next(),
             KeyCode::Up => app.previous(),
             KeyCode::Char('t') => app.theme = app.theme.clone().next(),
@@ -86,6 +87,8 @@ fn handle_key_event(app: &mut App, key_code: KeyCode) {
     }
 }
 
+//-----------------------------------------------------------------------------------------------------------
+
 fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> {
     loop {
         app.refresh();
@@ -101,3 +104,5 @@ fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>, app: &mut A
         }
     }
 }
+
+//-------------------------------------------------------------------------------------------------------------

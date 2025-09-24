@@ -7,6 +7,8 @@ use crossterm::{
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io::{self, Stdout};
 
+//----------------------------------------------------------------------------------------------------------
+
 pub fn init() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -15,6 +17,8 @@ pub fn init() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     let terminal = Terminal::new(backend)?;
     Ok(terminal)
 }
+
+//----------------------------------------------------------------------------------------------------------
 
 pub fn restore() -> Result<()> {
     disable_raw_mode()?;
