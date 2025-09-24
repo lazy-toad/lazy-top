@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/lazy-toad/lazy-top"
 homepage = "https://github.com/lazy-toad/lazy-top"
 keywords = ["tui", "cli", "system-monitor", "process-viewer", "ratatui"]
-categories = ["command-line-utilities", "system::monitoring"]
+categories = ["command-line-utilities", "os", "system"]
 
 [dependencies]
 anyhow = "1.0.100"
