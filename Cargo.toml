@@ -1,0 +1,16 @@
+[package]
+name = "lazy-top"
+version = "0.1.0"
+edition = "2021"
+description = "A terminal-based process viewer inspired by htop and btop, built with Rust and Ratatui."
+license = "MIT"
+repository = "https://github.com/lazy-toad/lazy-top"
+homepage = "https://github.com/lazy-toad/lazy-top"
+keywords = ["tui", "cli", "system-monitor", "process-viewer", "ratatui"]
+categories = ["command-line-utilities", "system::monitoring"]
+
+[dependencies]
+anyhow = "1.0.100"
+crossterm = "0.29.0"
+ratatui = "0.29.0"
+sysinfo = "0.37.0"
