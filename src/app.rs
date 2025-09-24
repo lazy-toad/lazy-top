@@ -83,14 +83,14 @@ impl AppTheme {
             },
             // This is the first, unnamed theme from your comments.
             AppTheme::OrangeSunset => ColorTheme {
-                base: Color::Rgb(255, 171, 36),
-                mantle: Color::Rgb(180, 85, 0),
-                text: Color::Rgb(135, 206, 250),
-                mauve: Color::Rgb(100, 149, 237),
-                pink: Color::Rgb(70, 130, 180),
-                yellow: Color::Rgb(224, 255, 255),
-                highlight_bg: Color::Rgb(70, 130, 180),
-                highlight_fg: Color::Rgb(215, 100, 0),
+                base: Color::Rgb(245, 124, 0),
+                mantle: Color::Rgb(245, 124, 0),
+                text: Color::Rgb(253, 253, 253),
+                mauve: Color::Rgb(0, 180, 255),
+                pink: Color::Rgb(0, 180, 255),
+                yellow: Color::Rgb(255, 224, 178),
+                highlight_bg: Color::Rgb(245, 245, 245),
+                highlight_fg: Color::Rgb(255, 165, 0),
             },
         }
     }
