@@ -34,10 +34,15 @@ fn handle_key_event(app: &mut App, key_code: KeyCode) {
                 app.mode = AppMode::Command;
                 app.command_buffer.clear();
             }
+            KeyCode::Char('/') => {
+                app.mode = AppMode::Filtering;
+                app.filter_query.clear();
+            }
             KeyCode::Char('k') => app.kill_selected_process(),
             KeyCode::Down => app.next(),
             KeyCode::Up => app.previous(),
             KeyCode::Char('t') => app.theme = app.theme.clone().next(),
+            KeyCode::Char('c') => app.cycle_sort_coloumn(),
             _ => {}
         },
         AppMode::Command => match key_code {
@@ -81,6 +86,18 @@ fn handle_key_event(app: &mut App, key_code: KeyCode) {
                         app.command_buffer = format!("theme {}", next_theme);
                     }
                 }
+            }
+            _ => {}
+        },
+        AppMode::Filtering => match key_code {
+            KeyCode::Char(c) => {
+                app.filter_query.push(c);
+            }
+            KeyCode::Backspace => {
+                app.filter_query.pop();
+            }
+            KeyCode::Enter | KeyCode::Esc => {
+                app.mode = AppMode::Normal;
             }
             _ => {}
         },

@@ -1,6 +1,7 @@
 use ratatui::style::Color;
 use ratatui::widgets::TableState;
-use sysinfo::{Pid, Process, System};
+use std::cmp::Ordering;
+use sysinfo::{Pid, System};
 
 //-----------------------------------------------------------------------------------------------------------------
 
@@ -140,10 +141,11 @@ impl AppTheme {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum AppMode {
     Normal,
     Command,
+    Filtering,
 }
 
 pub struct ProcessItem {
@@ -160,6 +162,9 @@ pub struct App {
     pub theme: AppTheme,
     pub mode: AppMode,
     pub command_buffer: String,
+    
+    pub sort_by: SortBy,
+    pub filter_query: String,
 }
 
 impl App {
@@ -174,7 +179,13 @@ impl App {
             theme: AppTheme::Nord,
             mode: AppMode::Normal,
             command_buffer: String::new(),
+            sort_by: SortBy::Cpu,
+            filter_query: String::new(),
         }
+    }
+
+    pub fn cycle_sort_coloumn(&mut self) {
+        self.sort_by = self.sort_by.next();
     }
 
     pub fn kill_selected_process(&mut self) {
@@ -221,34 +232,96 @@ impl App {
     pub fn refresh(&mut self) {
         self.sys.refresh_all();
 
-        self.processes.clear();
-
-        for (pid, process) in self.sys.processes() {
-            self.processes.push(ProcessItem {
+        // Temporarily hold processes
+        let mut processes: Vec<ProcessItem> = self
+            .sys
+            .processes()
+            .iter()
+            .map(|(pid, process)| ProcessItem {
                 pid: pid.to_string(),
                 name: process.name().to_string_lossy().into_owned(),
                 cpu_usage: format!("{:.2}%", process.cpu_usage()),
-                memory: format!("{:.2} MB", process.memory() as f64 / (1024.0 * 1024.0)),
-            });
+                memory: format!("{:.2} MB", process.memory() as f64 / 1024.0 / 1024.0),
+            })
+            .collect();
+
+        // Filter the processes if a query exists
+        if !self.filter_query.is_empty() {
+            let query = self.filter_query.to_lowercase();
+            processes.retain(|p| p.name.to_lowercase().contains(&query));
         }
 
-        self.processes.sort_by(|a, b| {
-            let a_cpu = a
-                .cpu_usage
-                .trim_end_matches('%')
-                .parse::<f32>()
-                .unwrap_or(0.0);
-            let b_cpu = b
-                .cpu_usage
-                .trim_end_matches('%')
-                .parse::<f32>()
-                .unwrap_or(0.0);
-
-            b_cpu
-                .partial_cmp(&a_cpu)
-                .unwrap_or(std::cmp::Ordering::Equal)
+        // Sort the processes based on the current sort_by state
+        processes.sort_by(|a, b| {
+            match self.sort_by {
+                SortBy::Pid => {
+                    let pid_a = a.pid.parse::<usize>().unwrap_or(0);
+                    let pid_b = b.pid.parse::<usize>().unwrap_or(0);
+                    pid_a.cmp(&pid_b)
+                }
+                SortBy::Name => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+                SortBy::Cpu => {
+                    let cpu_a = a
+                        .cpu_usage
+                        .trim_end_matches('%')
+                        .parse::<f32>()
+                        .unwrap_or(0.0);
+                    let cpu_b = b
+                        .cpu_usage
+                        .trim_end_matches('%')
+                        .parse::<f32>()
+                        .unwrap_or(0.0);
+                    cpu_b.partial_cmp(&cpu_a).unwrap_or(Ordering::Equal) // Note: Higher CPU is better
+                }
+                SortBy::Memory => {
+                    let mem_a = a
+                        .memory
+                        .split_whitespace()
+                        .next()
+                        .unwrap_or("0")
+                        .parse::<f32>()
+                        .unwrap_or(0.0);
+                    let mem_b = b
+                        .memory
+                        .split_whitespace()
+                        .next()
+                        .unwrap_or("0")
+                        .parse::<f32>()
+                        .unwrap_or(0.0);
+                    mem_b.partial_cmp(&mem_a).unwrap_or(Ordering::Equal) // Note: Higher Memory is "greater"
+                }
+            }
         });
+
+        // Now assign the processed list to the app state
+        self.processes = processes;
+
+        // Ensure selection is not out of bounds
+        if self.table_state.selected().is_some()
+            && self.table_state.selected().unwrap() >= self.processes.len()
+        {
+            self.table_state
+                .select(Some(self.processes.len().saturating_sub(1)));
+        }
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SortBy {
+    Pid,
+    Name,
+    Cpu,
+    Memory,
+}
+
+impl SortBy {
+    pub fn next(self) -> Self {
+        match self {
+            SortBy::Pid => Self::Name,
+            SortBy::Name => SortBy::Cpu,
+            SortBy::Cpu => SortBy::Memory,
+            SortBy::Memory => SortBy::Pid,
+        }
+    }
+}
 //-----------------------------------------------------------------------------------------------------------------------------------------------
