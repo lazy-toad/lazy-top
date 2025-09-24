@@ -1,6 +1,6 @@
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
+    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Sparkline, Table},
 };
 
 use crate::app::{App, AppMode, AppTheme};
@@ -19,6 +19,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(7),
+            Constraint::Length(5),
             Constraint::Min(0),
             Constraint::Length(1),
         ])
@@ -46,6 +47,25 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         .style(Style::default().fg(theme.text));
 
     f.render_widget(sys_info_para, chunks[0]);
+
+    //graph
+    let cpu_history_data: Vec<u64> = app
+        .cpu_history
+        .iter()
+        .map(|&(_, usage)| usage as u64)
+        .collect();
+
+    let sparkline = Sparkline::default()
+        .block(
+            Block::default()
+                .title("CPU History (%)")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme.pink)),
+        )
+        .data(&cpu_history_data)
+        .style(Style::default().fg(theme.mauve));
+
+    f.render_widget(sparkline, chunks[1]);
 
     //Process table
     let process_block = Block::default()
@@ -95,7 +115,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     .block(process_block)
     .row_highlight_style(highlight_style)
     .highlight_symbol(">> ");
-    f.render_stateful_widget(table, chunks[1], &mut app.table_state);
+    f.render_stateful_widget(table, chunks[2], &mut app.table_state);
 
     if app.mode == AppMode::Command {
         let command_text = format!(
@@ -105,7 +125,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         );
         let command_paragraph =
             Paragraph::new(command_text).style(Style::default().fg(theme.text).bg(theme.mantle));
-        f.render_widget(command_paragraph, chunks[2]);
+        f.render_widget(command_paragraph, chunks[3]);
     }
 }
 

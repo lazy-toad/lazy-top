@@ -16,7 +16,7 @@ pub struct ColorTheme {
     pub highlight_fg: Color,
 }
 
-#[derive(Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AppTheme {
     Nord,
     Gruvbox,
@@ -79,7 +79,7 @@ impl AppTheme {
                 pink: Color::Rgb(255, 216, 102),
                 yellow: Color::Rgb(255, 97, 136),
                 highlight_bg: Color::Rgb(120, 220, 232),
-                highlight_fg: Color::Rgb(45, 42, 46),
+                highlight_fg: Color::Rgb(252, 252, 250),
             },
             // This is the first, unnamed theme from your comments.
             AppTheme::OrangeSunset => ColorTheme {
@@ -102,7 +102,7 @@ impl AppTheme {
             "solarizeddark" => Some(AppTheme::SolarizedDark),
             "orangesunset" => Some(AppTheme::OrangeSunset),
             "github" => Some(AppTheme::GitHub),
-            "monokaipro" => Some(AppTheme::MononokaiPro),
+            "mononokaipro" => Some(AppTheme::MononokaiPro),
             _ => None,
         }
     }
@@ -162,9 +162,11 @@ pub struct App {
     pub theme: AppTheme,
     pub mode: AppMode,
     pub command_buffer: String,
-    
     pub sort_by: SortBy,
     pub filter_query: String,
+    pub cpu_history: Vec<(f64, f64)>,
+    pub tick_count: u64,
+    pub original_theme: Option<AppTheme>,
 }
 
 impl App {
@@ -176,11 +178,14 @@ impl App {
             sys: System::new_all(),
             processes: Vec::new(),
             table_state,
-            theme: AppTheme::Nord,
+            theme: AppTheme::GitHub,
             mode: AppMode::Normal,
             command_buffer: String::new(),
             sort_by: SortBy::Cpu,
             filter_query: String::new(),
+            cpu_history: Vec::new(),
+            tick_count: 0,
+            original_theme: None,
         }
     }
 
@@ -232,7 +237,14 @@ impl App {
     pub fn refresh(&mut self) {
         self.sys.refresh_all();
 
-        // Temporarily hold processes
+        let cpu_usage = self.sys.global_cpu_usage() as f64;
+        self.cpu_history.push((self.tick_count as f64, cpu_usage));
+
+        if self.cpu_history.len() > 100 {
+            self.cpu_history.remove(0);
+        }
+        self.tick_count += 1;
+
         let mut processes: Vec<ProcessItem> = self
             .sys
             .processes()
@@ -245,13 +257,11 @@ impl App {
             })
             .collect();
 
-        // Filter the processes if a query exists
         if !self.filter_query.is_empty() {
             let query = self.filter_query.to_lowercase();
             processes.retain(|p| p.name.to_lowercase().contains(&query));
         }
 
-        // Sort the processes based on the current sort_by state
         processes.sort_by(|a, b| {
             match self.sort_by {
                 SortBy::Pid => {
@@ -293,7 +303,6 @@ impl App {
             }
         });
 
-        // Now assign the processed list to the app state
         self.processes = processes;
 
         // Ensure selection is not out of bounds
