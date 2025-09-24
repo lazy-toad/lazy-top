@@ -30,6 +30,17 @@ After building, the executable will be located at `target/release/lazy-top`. You
 sudo mv target/release/lazy-top /usr/local/bin/
 ```
 
+
+### Using `cargo install`
+
+You can also install `lazy-top` directly from crates.io using `cargo install`:
+
+```bash
+cargo install lazy-top
+```
+
+This will build and install the executable in your Cargo bin directory (`~/.cargo/bin/`).
+
 ## Usage
 
 Run `lazy-top` from your terminal:
