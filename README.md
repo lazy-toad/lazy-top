@@ -16,6 +16,18 @@
 
 To install `lazy-top`, you need to have Rust and Cargo installed on your system. If you don't have them, you can install them from [rustup.rs](https://rustup.rs/).
 
+### From crates.io
+
+You can also install `lazy-top` directly from crates.io using `cargo install`:
+
+```bash
+cargo install lazy-top
+```
+
+This will build and install the executable in your Cargo bin directory (`~/.cargo/bin/`).
+
+### From Source
+
 Once Rust is installed, you can clone the repository and build the project:
 
 ```bash
@@ -30,17 +42,6 @@ After building, the executable will be located at `target/release/lazy-top`. You
 sudo mv target/release/lazy-top /usr/local/bin/
 ```
 
-
-### Using `cargo install`
-
-You can also install `lazy-top` directly from crates.io using `cargo install`:
-
-```bash
-cargo install lazy-top
-```
-
-This will build and install the executable in your Cargo bin directory (`~/.cargo/bin/`).
-
 ## Usage
 
 Run `lazy-top` from your terminal:
@@ -48,6 +49,7 @@ Run `lazy-top` from your terminal:
 ```bash
 lazy-top
 ```
+
 
 ### Keybindings
 
